@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/widgets.dart';
+import 'package:login/model/course.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
@@ -7,6 +9,7 @@ class Model extends ChangeNotifier {
   String username;
   String name;
   String token;
+  List<Course> cursos;
   bool logged;
 
   Model({this.token, this.username, this.name});
@@ -33,8 +36,8 @@ class Model extends ChangeNotifier {
             jsonEncode(<String, String>{'email': email, 'password': password}));
 
     if (response.statusCode != 200) {
-      Map mapREf=json.decode(response.body);
-     
+      Map mapREf = json.decode(response.body);
+
       return throw Exception(mapREf['error'].toString());
     }
 
@@ -56,8 +59,8 @@ class Model extends ChangeNotifier {
         }));
 
     if (response.statusCode != 200) {
-         Map mapREf=json.decode(response.body);
-     
+      Map mapREf = json.decode(response.body);
+
       return throw Exception(mapREf['error'].toString());
     }
 
@@ -85,5 +88,37 @@ class Model extends ChangeNotifier {
     await prefs.remove("name");
     await prefs.remove("token");
     notifyListeners();
+  }
+
+  obtenerCursos() async {
+    Uri uri = Uri.https("movil-api.herokuapp.com", '${this.username}/courses');
+    final http.Response response = await http.get(
+      uri,
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+        HttpHeaders.authorizationHeader: "Bearer " + this.token,
+      },
+    );
+    print(response.body);
+    if (response.statusCode == 200) {
+        final data=jsonDecode(response.body);
+        for(Map i in data){
+          
+          this.cursos.add(Course.fromJson(i));
+        }
+    }
+  }
+
+  void addCourse() async {
+    Uri uri = Uri.https("movil-api.herokuapp.com", '${this.username}/courses');
+    final http.Response response =
+        await http.post(uri, headers: <String, String>{
+      'Content-Type': 'application/json; charset=UTF-8',
+      HttpHeaders.authorizationHeader: "Bearer " + this.token,
+    });
+
+    print(uri);
+    print('${response.statusCode}');
+    print('response -> ${response.body}');
   }
 }
